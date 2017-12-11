@@ -1,0 +1,27 @@
+language: python
+python:
+ - "3.6"
+
+addons:
+  apt:
+    sources:
+      - xenial
+    packages:
+      - language-pack-pl
+
+# command to install dependencies
+before_script:
+  - pip install -r requirements.txt
+
+# command to run tests
+script:
+  - mkdir ~/.pywikibot
+
+  - if [[ -n "$OAUTH_TOKEN1" && -n "$OAUTH_TOKEN2" && -n "$OAUTH_TOKEN3" && -n "$OAUTH_TOKEN4" && -n "$PYWIKIBOT2_USERNAME" ]]; then
+        printf "family = 'wiktionary'\n" >> ~/.pywikibot/user-config.py ;
+        printf "mylang = 'pl'\n" >> ~/.pywikibot/user-config.py ;
+        printf "usernames['wiktionary']['pl'] = '%q'\n" "$PYWIKIBOT2_USERNAME" >> ~/.pywikibot/user-config.py ;
+        printf "authenticate['pl.wiktionary.org'] = ('%q', '%q', '%q', '%q')\n" "$OAUTH_TOKEN1" "$OAUTH_TOKEN2" "$OAUTH_TOKEN3" "$OAUTH_TOKEN4" >> ~/.pywikibot/user-config.py ;
+    fi
+
+  - pytest
