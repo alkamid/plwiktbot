@@ -1,6 +1,6 @@
 language: python
 python:
- - "3.6"
+ - '3.7'
 
 addons:
   apt:
@@ -9,9 +9,9 @@ addons:
     packages:
       - language-pack-pl
 
-# command to install dependencies
-before_script:
-  - pip install -r requirements.txt
+install:
+  - 'pip install pipenv'
+  - 'pipenv install --dev'
 
 # command to run tests
 script:

@@ -1,3 +1,0 @@
-requests-oauthlib>=0.8
-pytest
-pywikibot>=3.0
