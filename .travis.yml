@@ -10,6 +10,11 @@ addons:
     packages:
       - language-pack-pl
 
+env:
+  global:
+    - PIPENV_VENV_IN_PROJECT=1
+    - PIPENV_IGNORE_VIRTUALENVS=1
+
 install:
   - 'pip install pipenv'
   - 'pipenv install --dev'
