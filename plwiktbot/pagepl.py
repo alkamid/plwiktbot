@@ -60,6 +60,8 @@ class Section:
     def __init__(self, wikitext: Optional[str]=None, parse=True):
         self.wikitext = wikitext
         self.meanings = ''
+        self.senses = list()
+        self.pos = list()
 
         if wikitext is None and parse:
             raise ValueError('In order to parse a section, its wikitext must be provided!')
@@ -71,6 +73,19 @@ class Section:
         meanings_start = wikitext.find('{{znaczenia}}') + len('{{znaczenia}}')
         meanings_end = wikitext.find('{{odmiana}}')
         self.meanings = wikitext[meanings_start:meanings_end].strip()
+        current_pos = None
+        for line in self.meanings.split('\n'):
+            if line.startswith(': ('):
+                assert current_pos is not None
+                number_end_idx = line.find(')', 3)
+                number = line[3:number_end_idx]
+                sense = line[number_end_idx+1:]
+                self.senses.append((number, sense, current_pos))
+            else:
+                current_pos = line
+                self.pos.append(current_pos)
+        print(self.pos)
+        print(self.senses)
 
 
 def find_sections_seq(text: str) -> List[Tuple[str, str]]:
