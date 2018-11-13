@@ -9,6 +9,7 @@ pywikibot = "*"
 
 [dev-packages]
 pytest = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.7"
