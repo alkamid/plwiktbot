@@ -1,6 +1,4 @@
-import re
-from gettext import find
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 from pywikibot import Page
 from pywikibot import Site
@@ -8,7 +6,7 @@ from pywikibot.xmlreader import XmlEntry
 
 
 class PagePL:
-    def __init__(self, parse=True):
+    def __init__(self, parse=True, languages: Optional[Union[str, List[str]]]=None):
         self.site_plwikt = Site('pl', 'wiktionary')
         self.language_sections = dict()
         self.regexps = dict()
@@ -17,35 +15,43 @@ class PagePL:
             self.text = ''
 
         if parse:
-            self.find_language_sections()
+            self.find_language_sections(languages)
 
-    def find_language_sections(self):
+    def find_language_sections(self, languages: Optional[Union[str, List[str]]]=None):
         header_index = self.text.index('==')
         self.header = self.text[:header_index]
 
+        if isinstance(languages, str):
+            languages = [languages]
+
         sec_list = find_sections_seq(self.text[header_index:])
+        if languages is not None:
+            sec_list = [s for s in sec_list if any(l in s[0] for l in languages)]
         if sec_list:
             for head, content in sec_list:
                 lang_start = head.find('({{') + 3
                 lang_end = head.find('}})')
                 self.language_sections[head[lang_start:lang_end]] = Section(content)
-        else:
+        elif languages is None:
             raise SectionsNotFound
 
 
 class PagePLWiki(Page, PagePL):
-    def __init__(self, title, **kwargs):
+    def __init__(self, title: str, **kwargs):
         site_plwikt = Site('pl', 'wiktionary')
         parse = kwargs.pop('parse', True)
-        print(kwargs)
         Page.__init__(self, source=site_plwikt, title=title, **kwargs)
         PagePL.__init__(self, parse=parse)
 
 
-class PagePLXML(XmlEntry, PagePL):
-    def __init__(self, **kwargs):
-        PagePL.__init__(self)
-        XmlEntry.__init__(self, **kwargs)
+class PagePLXML(PagePL):
+    def __init__(self, xmlentry: XmlEntry, **kwargs):
+        self.__dict__.update(xmlentry.__dict__)
+        if int(self.ns) == 0 and not self.isredirect and not self.title.startswith('Słownik '):
+            PagePL.__init__(self, **kwargs)
+        else:
+            kwargs.pop('parse', True)
+            PagePL.__init__(self, parse=False, **kwargs)
 
 
 class SectionsNotFound(Exception):
@@ -75,17 +81,14 @@ class Section:
         self.meanings = wikitext[meanings_start:meanings_end].strip()
         current_pos = None
         for line in self.meanings.split('\n'):
-            if line.startswith(': ('):
-                assert current_pos is not None
+            if not line.startswith(': ('):
+                current_pos = line
+                self.pos.append(current_pos)
+            else:
                 number_end_idx = line.find(')', 3)
                 number = line[3:number_end_idx]
                 sense = line[number_end_idx+1:]
                 self.senses.append((number, sense, current_pos))
-            else:
-                current_pos = line
-                self.pos.append(current_pos)
-        print(self.pos)
-        print(self.senses)
 
 
 def find_sections_seq(text: str) -> List[Tuple[str, str]]:
