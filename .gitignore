@@ -1,6 +1,11 @@
 .cache/
 apicache/
 test/.cache/
+.idea/
+.mypy_cache
+apicache-py3/
 
 *.ctrl
 user-config.py
+
+Pipfile.lock
