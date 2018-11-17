@@ -23,6 +23,7 @@ def read_dump(filename: str):
 
 
 def build_index_dict(index_filename: str) -> Dict[str, List[int]]:
+    #TODO: Last 100 pages have None as end index. Change?
     in_dict = {}
     with bz2.BZ2File(index_filename) as f:
         index_text = f.read().decode('utf-8')
