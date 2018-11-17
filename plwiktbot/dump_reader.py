@@ -1,29 +1,55 @@
+import json
 import bz2
 from os import unlink
 from tempfile import mkstemp
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 from pywikibot.xmlreader import XmlDump, XmlEntry
 from plwiktbot.pagepl import PagePLXML
+from plwiktbot.tools import dewikify
+
+
+def build_dictionary(dump_filename: str, output_filename: Optional[str]=None) -> Dict[str, str]:
+    page_generator = XmlDump(dump_filename).parse()
+    dictionary = dict()
+    for p in page_generator:
+        try:
+            page = PagePLXML(p, languages=['polski'])
+            plsec = page.language_sections['język polski']
+        except KeyError:
+            continue
+        except ValueError as e:
+            raise e
+        if ' ' in page.title or '-' in page.title or page.title[0].isupper():
+            continue
+        entry = '; '.join([dewikify(s.wikitext, remove_templates=True)
+                           for s in plsec.senses])
+        dictionary[page.title] = entry
+
+    if output_filename is not None:
+        with open(output_filename, 'w') as f:
+            json.dump(dictionary, f, ensure_ascii=False)
+
+    return dictionary
 
 
 def read_dump(filename: str):
     page_generator = XmlDump(filename).parse()
-    i = 0
     for p in page_generator:
         try:
             page = PagePLXML(p, languages=['polski'])
         except ValueError as e:
             raise e
         try:
-            print(page.language_sections['język polski'].meanings)
+            print([dewikify(s.wikitext, remove_templates=True)
+                   for s in page.language_sections['język polski'].senses])
         except KeyError:
             pass
 
 
 def build_index_dict(index_filename: str) -> Dict[str, List[int]]:
-    #TODO: Last 100 pages have None as end index. Change?
+    # TODO: Last 100 pages have None as end index. Change?
     in_dict = {}
     with bz2.BZ2File(index_filename) as f:
         index_text = f.read().decode('utf-8')
@@ -63,4 +89,5 @@ def lookup_page(title: str, index_dict: Dict, filename_dump: str) -> XmlEntry:
                     return page
         finally:
             unlink(tempfile)
+
 
