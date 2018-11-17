@@ -1,17 +1,20 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple, Union, Dict
 
 from pywikibot import Page
 from pywikibot import Site
 from pywikibot.xmlreader import XmlEntry
 
+from plwiktbot.lang import Sense, POS
+
 
 class PagePL:
     def __init__(self, parse=True, languages: Optional[Union[str, List[str]]]=None):
         self.site_plwikt = Site('pl', 'wiktionary')
-        self.language_sections = dict()
-        self.regexps = dict()
+        self.language_sections: Dict[str, Section] = dict()
         self.header = ''
-        if not self.text:
+        try:
+            assert isinstance(self.text, str)
+        except AttributeError:
             self.text = ''
 
         if parse:
@@ -66,29 +69,28 @@ class Section:
     def __init__(self, wikitext: Optional[str]=None, parse=True):
         self.wikitext = wikitext
         self.meanings = ''
-        self.senses = list()
-        self.pos = list()
+        self.senses: List[Sense] = list()
+        self.pos: List[POS] = list()
 
         if wikitext is None and parse:
             raise ValueError('In order to parse a section, its wikitext must be provided!')
-
-        if parse:
+        elif wikitext is not None and parse:
             self.parse(wikitext)
 
     def parse(self, wikitext: str) -> None:
         meanings_start = wikitext.find('{{znaczenia}}') + len('{{znaczenia}}')
         meanings_end = wikitext.find('{{odmiana}}')
         self.meanings = wikitext[meanings_start:meanings_end].strip()
-        current_pos = None
+        current_pos = POS('')
         for line in self.meanings.split('\n'):
             if not line.startswith(': ('):
-                current_pos = line
+                current_pos = POS(line)
                 self.pos.append(current_pos)
             else:
                 number_end_idx = line.find(')', 3)
                 number = line[3:number_end_idx]
-                sense = line[number_end_idx+1:]
-                self.senses.append((number, sense, current_pos))
+                sense = line[number_end_idx+1:].strip()
+                self.senses.append(Sense(number, sense, current_pos))
 
 
 def find_sections_seq(text: str) -> List[Tuple[str, str]]:
