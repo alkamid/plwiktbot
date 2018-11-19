@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 requests-oauthlib = "*"
 pywikibot = "*"
+"beautifulsoup4" = "*"
+lxml = "*"
+requests = "*"
 
 [dev-packages]
 pytest = "*"
