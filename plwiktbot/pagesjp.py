@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import List, Dict, KeysView, Union
+
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 import requests
@@ -6,7 +9,7 @@ import requests
 class PageSJP:
     def __init__(self, title: str) -> None:
         self.title = title
-        self.words = list()
+        self.words = dict()
         self.parse_page()
 
     def parse_page(self):
@@ -14,19 +17,45 @@ class PageSJP:
         html = BeautifulSoup(raw_content, 'lxml')
         all_words = html.find_all('a', class_='lc')
         for word in all_words:
-            self.words.append(WordSJP(word))
+            self.words[word.text] = WordSJP(word)
+
+    def to_dict(self) -> Dict[str, Dict[str, Union[str, Dict[str, List[str]]]]]:
+        page_dict = dict()
+        for word in self.words:
+            page_dict[word] = self.words[word].to_dict()
+        return page_dict
 
 
 class WordSJP:
     def __init__(self, header) -> None:
         self.title = header.text
-        self.flags = list()
-        self.inflections = list()
+        self.flags: Dict[str, List[str]] = dict()
         self.meanings = ''
         self.parse_word(header)
 
     def parse_word(self, header: Tag) -> None:
         info_table = header.parent.parent.find_next_sibling()
-        meaning_text = info_table.find_next_sibling()
-        print(meaning_text)
+        flag_rows = info_table.find_all('tt')
+        for f in flag_rows:
+            flag_symbol = f.text
+            flag_derivatives = f.parent.parent.find('td').text.split(', ')
+            self.flags[flag_symbol] = flag_derivatives
+        meaning_contents = info_table.find_next_sibling()
+        for i, elem in enumerate(meaning_contents):
+            if elem.name == 'br' and i < len(meaning_contents) - 1:
+                self.meanings += ' / '
+            else:
+                try:
+                    self.meanings += elem.strip(';, ')
+                except TypeError:
+                    self.meanings += elem.text
 
+    def get_flags(self) -> KeysView:
+        return self.flags.keys()
+
+    def to_dict(self) -> Dict[str, Union[str, Dict[str, List[str]]]]:
+        word_dict = dict()
+        word_dict['word'] = self.title
+        word_dict['flags'] = self.flags
+        word_dict['meanings'] = self.meanings
+        return word_dict
