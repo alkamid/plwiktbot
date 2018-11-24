@@ -7,27 +7,29 @@ import requests
 
 
 class PageSJP:
-    def __init__(self, title: str) -> None:
+    def __init__(self, title: str, base_forms_only: bool=True) -> None:
         self.title = title
-        self.words = dict()
-        self.parse_page()
+        self.words = list()
+        self.parse_page(base_forms_only)
 
-    def parse_page(self):
+    def parse_page(self, base_forms_only: bool=True):
         raw_content = requests.get(f'https://sjp.pl/{self.title}').content
         html = BeautifulSoup(raw_content, 'lxml')
         all_words = html.find_all('a', class_='lc')
+        if base_forms_only:
+            all_words = [w for w in all_words if w.text == self.title]
         for word in all_words:
-            self.words[word.text] = WordSJP(word)
+            self.words.append(WordSJP(word))
 
-    def to_dict(self) -> Dict[str, Dict[str, Union[str, Dict[str, List[str]]]]]:
-        page_dict = dict()
+    def to_dict(self) -> List[Dict[str, Union[str, Dict[str, List[str]]]]]:
+        page_dict = list()
         for word in self.words:
-            page_dict[word] = self.words[word].to_dict()
+            page_dict.append(word.to_dict())
         return page_dict
 
 
 class WordSJP:
-    def __init__(self, header) -> None:
+    def __init__(self, header: Tag) -> None:
         self.title = header.text
         self.flags: Dict[str, List[str]] = dict()
         self.meanings = ''
