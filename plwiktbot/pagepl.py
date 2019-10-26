@@ -8,7 +8,7 @@ from plwiktbot.lang import Sense, POS
 
 
 class PagePL:
-    def __init__(self, parse=True, languages: Optional[Union[str, List[str]]]=None):
+    def __init__(self, parse=True, languages: Optional[Union[str, List[str]]] = None):
         self.site_plwikt = Site('pl', 'wiktionary')
         self.language_sections: Dict[str, Section] = dict()
         self.header = ''
@@ -18,7 +18,10 @@ class PagePL:
             self.text = ''
 
         if parse:
-            self.find_language_sections(languages)
+            self.parse(languages)
+
+    def parse(self, languages: Optional[Union[str, List[str]]] = None):
+        self.find_language_sections(languages)
 
     def find_language_sections(self, languages: Optional[Union[str, List[str]]]=None):
         header_index = self.text.index('==')
