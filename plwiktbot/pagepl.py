@@ -4,7 +4,8 @@ from pywikibot import Page
 from pywikibot import Site
 from pywikibot.xmlreader import XmlEntry
 
-from plwiktbot.lang import Sense, POS
+from .lang import Sense, POS, Language
+from . import config
 
 
 class PagePL:
@@ -23,7 +24,7 @@ class PagePL:
     def parse(self, languages: Optional[Union[str, List[str]]] = None):
         self.find_language_sections(languages)
 
-    def find_language_sections(self, languages: Optional[Union[str, List[str]]]=None):
+    def find_language_sections(self, languages: Optional[Union[str, List[str]]] = None):
         header_index = self.text.index('==')
         self.header = self.text[:header_index]
 
@@ -37,7 +38,9 @@ class PagePL:
             for head, content in sec_list:
                 lang_start = head.find('({{') + 3
                 lang_end = head.find('}})')
-                self.language_sections[head[lang_start:lang_end]] = Section(content)
+                lang = head[lang_start:lang_end]
+                lang = lang.replace('język', '').strip()
+                self.language_sections[lang] = Section(lang, content)
         elif languages is None:
             raise SectionsNotFound
 
@@ -69,7 +72,8 @@ class SectionsNotFound(Exception):
 
 
 class Section:
-    def __init__(self, wikitext: Optional[str]=None, parse=True):
+    def __init__(self,  lang: str, wikitext: Optional[str] = None, parse=True):
+        self.lang = Language(lang)
         self.wikitext = wikitext
         self.meanings = ''
         self.senses: List[Sense] = list()
@@ -81,13 +85,14 @@ class Section:
             self.parse(wikitext)
 
     def parse(self, wikitext: str) -> None:
+        self.lang = config.lang_dict[self.lang.short_name]
         meanings_start = wikitext.find('{{znaczenia}}') + len('{{znaczenia}}')
         meanings_end = wikitext.find('{{odmiana}}')
         self.meanings = wikitext[meanings_start:meanings_end].strip()
         current_pos = POS('')
         for line in self.meanings.split('\n'):
             if not line.startswith(': ('):
-                current_pos = POS(line)
+                current_pos = POS(line, self.lang)
                 self.pos.append(current_pos)
             else:
                 number_end_idx = line.find(')', 3)
