@@ -8,7 +8,7 @@ def test_meanings():
     test_page.find_language_sections()
 
     assert len(test_page.language_sections) == 1
-    plsec = test_page.language_sections['język polski']
+    plsec = test_page.language_sections['polski']
 
     assert 'czasownik przechodni niedokonany' in plsec.pos[0].wikitext
     assert plsec.pos[0].pos_class == 'verb'
